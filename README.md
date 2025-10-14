@@ -132,15 +132,6 @@ Test with sample statements from:
 - Requires consistent statement formats
 - May need pattern updates for new statement layouts
 
-## Future Enhancements
-
-- [ ] OCR support for scanned PDFs
-- [ ] Transaction history extraction
-- [ ] Multiple file batch processing
-- [ ] Export to CSV/Excel
-- [ ] Database storage option
-- [ ] User authentication
-- [ ] Statement comparison features
 
 ## License
 
