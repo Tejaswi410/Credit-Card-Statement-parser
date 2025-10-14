@@ -42,7 +42,7 @@ def parse_statement():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Parsing the PDF
+        # Parsing the PDF file
         result = parser.parse(filepath)
         
         # Cleaning up - delete uploaded file
