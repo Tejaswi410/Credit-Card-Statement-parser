@@ -1,6 +1,7 @@
 # Credit Card Statement Parser
 
 A Flask-based web application that extracts structured data from credit card statement PDFs.
+![Preview](https://github.com/Tejaswi410/Credit-Card-Statement-parser/blob/main/Screenshot%202025-10-14%20221806.png)
 
 ## Features
 
