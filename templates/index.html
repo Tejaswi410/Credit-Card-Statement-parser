@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Statement Parser</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0 !important;
+            padding: 30px;
+        }
+        .upload-zone {
+            border: 3px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 50px;
+            text-align: center;
+            background-color: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-zone:hover {
+            border-color: #667eea;
+            background-color: #e7f1ff;
+        }
+        .upload-zone.dragover {
+            border-color: #667eea;
+            background-color: #e7f1ff;
+        }
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 40px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .result-card {
+            border-left: 4px solid #667eea;
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+        .result-card:hover {
+            transform: translateX(5px);
+        }
+        .field-label {
+            color: #6c757d;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field-value {
+            color: #212529;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        .badge-provider {
+            font-size: 1rem;
+            padding: 8px 16px;
+        }
+        .json-container {
+            background-color: #2d3748;
+            color: #48bb78;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .alert-custom {
+            border-radius: 10px;
+            border: none;
+        }
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        @media (max-width: 768px) {
+            .main-container {
+                margin-top: 20px;
+            }
+            .card-header {
+                padding: 20px;
+            }
+            .upload-zone {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container main-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h1 class="mb-2"><i class="fas fa-credit-card me-2"></i>Credit Card Statement Parser</h1>
+                        <p class="mb-0">Upload your credit card statement and extract key information instantly</p>
+                    </div>
+                    <div class="card-body p-4">
+                        <!-- Upload Form -->
+                        <div id="uploadSection">
+                            <div class="upload-zone" id="uploadZone">
+                                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                <h4>Drop your PDF here or click to browse</h4>
+                                <p class="text-muted mb-3">Supports HDFC, ICICI, SBI, Axis, and Kotak statements</p>
+                                <input type="file" id="fileInput" class="d-none" accept=".pdf">
+                                <p class="text-muted small mb-0" id="fileName"></p>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <button class="btn btn-primary btn-lg" id="parseBtn" disabled>
+                                    <i class="fas fa-file-alt me-2"></i>Parse Statement
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-info alert-custom mt-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Supported Banks:</strong> HDFC, ICICI, SBI, Axis Bank, Kotak Mahindra
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div id="resultsSection" class="d-none">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="mb-0"><i class="fas fa-check-circle text-success me-2"></i>Extracted Information</h3>
+                                <button class="btn btn-outline-secondary" id="resetBtn">
+                                    <i class="fas fa-redo me-2"></i>Parse Another
+                                </button>
+                            </div>
+
+                            <div class="alert alert-success alert-custom mb-4" id="providerInfo">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <i class="fas fa-building me-2"></i>
+                                        <strong>Detected Provider:</strong> <span id="providerName"></span>
+                                    </div>
+                                    <div>
+                                        <strong>Confidence:</strong> <span id="confidenceScore"></span>%
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row" id="dataFields">
+                                <!-- Dynamic field cards will be inserted here -->
+                            </div>
+
+                            <!-- JSON View -->
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>Raw JSON Data</h5>
+                                    <button class="btn btn-sm btn-outline-primary" id="copyJsonBtn">
+                                        <i class="fas fa-copy me-1"></i>Copy JSON
+                                    </button>
+                                </div>
+                                <div class="json-container">
+                                    <pre id="jsonOutput"></pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Error Section -->
+                        <div id="errorSection" class="d-none">
+                            <div class="alert alert-danger alert-custom">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Error:</strong> <span id="errorMessage"></span>
+                            </div>
+                            <div class="text-center">
+                                <button class="btn btn-primary" id="retryBtn">
+                                    <i class="fas fa-redo me-2"></i>Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="text-center mt-4 text-white">
+                    <p class="mb-1"><i class="fas fa-lock me-2"></i>Your files are processed securely and not stored</p>
+                    <p class="small">Supports PDF statements from major Indian banks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border text-light" role="status"></div>
+            <p class="text-white mt-3 h5">Parsing your statement...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedFile = null;
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const parseBtn = document.getElementById('parseBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const resetBtn = document.getElementById('resetBtn');
+        const retryBtn = document.getElementById('retryBtn');
+        const copyJsonBtn = document.getElementById('copyJsonBtn');
+
+        // Upload zone click handler
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // File selection handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.type === 'application/pdf') {
+                selectedFile = file;
+                fileName.textContent = `Selected: ${file.name}`;
+                fileName.classList.add('text-success');
+                parseBtn.disabled = false;
+            } else {
+                alert('Please select a valid PDF file');
+                fileInput.value = '';
+            }
+        });
+
+        // Drag and drop handlers
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                selectedFile = file;
+                fileInput.files = e.dataTransfer.files;
+                fileName.textContent = `Selected: ${file.name}`;
+                fileName.classList.add('text-success');
+                parseBtn.disabled = false;
+            } else {
+                alert('Please drop a valid PDF file');
+            }
+        });
+
+        // Parse button handler
+        parseBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            loadingOverlay.classList.add('active');
+            uploadSection.classList.add('d-none');
+            resultsSection.classList.add('d-none');
+            errorSection.classList.add('d-none');
+
+            try {
+                const response = await fetch('/parse', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                loadingOverlay.classList.remove('active');
+
+                if (result.success) {
+                    displayResults(result);
+                } else {
+                    displayError(result.error);
+                }
+            } catch (error) {
+                loadingOverlay.classList.remove('active');
+                displayError('Network error. Please try again.');
+            }
+        });
+
+        // Display results
+        function displayResults(result) {
+            resultsSection.classList.remove('d-none');
+            
+            // Set provider info
+            document.getElementById('providerName').textContent = result.provider;
+            document.getElementById('confidenceScore').textContent = result.confidence;
+
+            // Define field icons and colors
+            const fieldConfig = {
+                'cardholder_name': { icon: 'fa-user', color: 'primary', label: 'Cardholder Name' },
+                'card_last_4': { icon: 'fa-hashtag', color: 'info', label: 'Card Last 4 Digits' },
+                'billing_period': { icon: 'fa-calendar-alt', color: 'success', label: 'Billing Period' },
+                'total_amount_due': { icon: 'fa-dollar-sign', color: 'warning', label: 'Total Amount Due' },
+                'payment_due_date': { icon: 'fa-calendar-check', color: 'danger', label: 'Payment Due Date' }
+            };
+
+            // Build field cards
+            const dataFields = document.getElementById('dataFields');
+            dataFields.innerHTML = '';
+
+            for (const [key, value] of Object.entries(result.data)) {
+                const config = fieldConfig[key];
+                const colClass = key === 'billing_period' ? 'col-md-12' : 'col-md-6';
+                
+                const card = `
+                    <div class="${colClass} mb-3">
+                        <div class="card result-card h-100">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="icon-box bg-${config.color} bg-opacity-10 text-${config.color} me-3">
+                                    <i class="fas ${config.icon}"></i>
+                                </div>
+                                <div>
+                                    <div class="field-label">${config.label}</div>
+                                    <div class="field-value">${value}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                dataFields.innerHTML += card;
+            }
+
+            // Display JSON
+            document.getElementById('jsonOutput').textContent = JSON.stringify(result.data, null, 2);
+        }
+
+        // Display error
+        function displayError(message) {
+            errorSection.classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Reset handler
+        resetBtn.addEventListener('click', resetForm);
+        retryBtn.addEventListener('click', resetForm);
+
+        function resetForm() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileName.textContent = '';
+            parseBtn.disabled = true;
+            uploadSection.classList.remove('d-none');
+            resultsSection.classList.add('d-none');
+            errorSection.classList.add('d-none');
+        }
+
+        // Copy JSON handler
+        copyJsonBtn.addEventListener('click', () => {
+            const jsonText = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(jsonText).then(() => {
+                const originalText = copyJsonBtn.innerHTML;
+                copyJsonBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                setTimeout(() => {
+                    copyJsonBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
