@@ -1,21 +1,21 @@
 import re
 import pdfplumber
 from datetime import datetime
+from typing import Dict, List, Optional, Any
 
 class CreditCardParser:
     def __init__(self):
         self.providers = {
             'HDFC': self._parse_hdfc,
             'ICICI': self._parse_icici,
-            'SBI': self._parse_sbi,
             'AXIS': self._parse_axis,
-            'KOTAK': self._parse_kotak
+            'KOTAK': self._parse_kotak,
+            'SBI': self._parse_sbi
         }
     
-    def parse(self, filepath):
+    def parse(self, filepath: str) -> Dict[str, Any]:
         """Main parsing method"""
         try:
-            # Extracting text from PDF
             text = self._extract_text(filepath)
             
             if not text:
@@ -24,10 +24,8 @@ class CreditCardParser:
                     'error': 'Could not extract text from PDF'
                 }
             
-            # Detecting provider
             provider = self._detect_provider(text)
             
-            # Parsing based on provider
             if provider in self.providers:
                 data = self.providers[provider](text)
             else:
@@ -46,8 +44,8 @@ class CreditCardParser:
                 'error': f'Parsing error: {str(e)}'
             }
     
-    def _extract_text(self, filepath):
-        """Extracting text from PDF using pdfplumber"""
+    def _extract_text(self, filepath: str) -> str:
+        """Extract text from PDF using pdfplumber"""
         text = ""
         try:
             with pdfplumber.open(filepath) as pdf:
@@ -59,263 +57,485 @@ class CreditCardParser:
         except Exception as e:
             raise Exception(f"Failed to read PDF: {str(e)}")
     
-    def _detect_provider(self, text):
-        """Detecting credit card provider from text"""
+    def _detect_provider(self, text: str) -> str:
+        """Detect credit card provider from text"""
         text_upper = text.upper()
         
-        if 'HDFC BANK' in text_upper or 'HDFC' in text_upper:
+        if 'HDFC BANK' in text_upper:
             return 'HDFC'
-        elif 'ICICI BANK' in text_upper or 'ICICI' in text_upper:
+        elif 'ICICI BANK' in text_upper:
             return 'ICICI'
-        elif 'STATE BANK' in text_upper or 'SBI CARD' in text_upper:
-            return 'SBI'
-        elif 'AXIS BANK' in text_upper or 'AXIS' in text_upper:
+        elif 'AXIS BANK' in text_upper:
             return 'AXIS'
         elif 'KOTAK' in text_upper:
             return 'KOTAK'
+        elif 'STATE BANK OF INDIA' in text_upper or 'SBI' in text_upper:
+            return 'SBI'
         
-        return 'Generic'
+        return 'Unknown'
     
-    def _parse_hdfc(self, text):
-        """Parsing HDFC credit card statement"""
+    def _parse_hdfc(self, text: str) -> Dict[str, Any]:
+        """Parse HDFC credit card statement"""
+        data = {
+            'cardholder_name': self._extract_hdfc_name(text),
+            'card_number': self._extract_hdfc_card(text),
+            'statement_date': self._extract_hdfc_statement_date(text),
+            'payment_due_date': self._extract_hdfc_due_date(text),
+            'total_amount_due': self._extract_hdfc_total_due(text),
+            'minimum_amount_due': self._extract_hdfc_min_due(text),
+            'credit_limit': self._extract_hdfc_credit_limit(text),
+            'transactions': self._extract_hdfc_transactions(text)
+        }
+        return data
+    
+    def _parse_icici(self, text: str) -> Dict[str, Any]:
+        """Parse ICICI credit card statement"""
+        data = {
+            'cardholder_name': self._extract_icici_name(text),
+            'card_number': self._extract_icici_card(text),
+            'statement_date': self._extract_icici_statement_date(text),
+            'payment_due_date': self._extract_icici_due_date(text),
+            'total_amount_due': self._extract_icici_total_due(text),
+            'minimum_amount_due': self._extract_icici_min_due(text),
+            'credit_limit': self._extract_icici_credit_limit(text),
+            'transactions': self._extract_icici_transactions(text)
+        }
+        return data
+    
+    def _parse_axis(self, text: str) -> Dict[str, Any]:
+        """Parse Axis Bank credit card statement"""
+        data = {
+            'cardholder_name': self._extract_axis_name(text),
+            'card_number': self._extract_axis_card(text),
+            'statement_date': self._extract_axis_statement_date(text),
+            'payment_due_date': self._extract_axis_due_date(text),
+            'total_amount_due': self._extract_axis_total_due(text),
+            'minimum_amount_due': self._extract_axis_min_due(text),
+            'credit_limit': self._extract_axis_credit_limit(text),
+            'transactions': self._extract_axis_transactions(text)
+        }
+        return data
+    
+    def _parse_kotak(self, text: str) -> Dict[str, Any]:
+        """Parse Kotak credit card statement"""
+        data = {
+            'cardholder_name': self._extract_kotak_name(text),
+            'card_number': self._extract_kotak_card(text),
+            'statement_date': self._extract_kotak_statement_date(text),
+            'payment_due_date': self._extract_kotak_due_date(text),
+            'total_amount_due': self._extract_kotak_total_due(text),
+            'minimum_amount_due': self._extract_kotak_min_due(text),
+            'credit_limit': self._extract_kotak_credit_limit(text),
+            'transactions': self._extract_kotak_transactions(text)
+        }
+        return data
+    
+    def _parse_sbi(self, text: str) -> Dict[str, Any]:
+        """Parse SBI credit card statement"""
+        data = {
+            'cardholder_name': self._extract_sbi_name(text),
+            'card_number': self._extract_sbi_card(text),
+            'statement_date': self._extract_sbi_statement_date(text),
+            'payment_due_date': self._extract_sbi_due_date(text),
+            'total_amount_due': self._extract_sbi_total_due(text),
+            'minimum_amount_due': self._extract_sbi_min_due(text),
+            'credit_limit': self._extract_sbi_credit_limit(text),
+            'transactions': self._extract_sbi_transactions(text)
+        }
+        return data
+    
+    def _parse_generic(self, text: str) -> Dict[str, Any]:
+        """Generic parser for unknown providers"""
         return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
+            'cardholder_name': self._extract_generic_name(text),
+            'card_number': self._extract_generic_card(text),
+            'statement_date': 'Not Found',
+            'payment_due_date': self._extract_generic_due_date(text),
+            'total_amount_due': self._extract_generic_amount(text),
+            'minimum_amount_due': 'Not Found',
+            'credit_limit': 'Not Found',
+            'transactions': []
         }
     
-    def _parse_icici(self, text):
-        """Parsing ICICI credit card statement"""
-        return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
-        }
+    # ===== HDFC EXTRACTION METHODS =====
     
-    def _parse_sbi(self, text):
-        """Parsing SBI credit card statement"""
-        return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
-        }
-    
-    def _parse_axis(self, text):
-        """Parsing Axis credit card statement"""
-        return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
-        }
-    
-    def _parse_kotak(self, text):
-        """Parsing Kotak credit card statement"""
-        return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
-        }
-    
-    def _parse_generic(self, text):
-        """providing generic parser for unknown providers"""
-        return {
-            'cardholder_name': self._extract_cardholder_name(text),
-            'card_last_4': self._extract_card_last_4(text),
-            'billing_period': self._extract_billing_period(text),
-            'total_amount_due': self._extract_amount_due(text),
-            'payment_due_date': self._extract_due_date(text)
-        }
-    
-    # ===== THESE ARE FIELD EXTRACTION METHODS =====
-    
-    def _extract_cardholder_name(self, text):
-        """Extracting cardholder name"""
-        def _clean_candidate_name(raw: str) -> str:
-            name = raw.strip()
-            # Removing text after commas or slashes that often start addresses or clauses
-            name = re.split(r'[,/\n]', name)[0]
-            # Removing specific nuisance phrases
-            name = re.sub(r'\b(Name\s*of\s*Nominee.*?)$', '', name, flags=re.IGNORECASE).strip()
-            name = re.sub(r'\b(of\s+nominee|nominee|for\s+lost\s+or\s+stolen\s+card|customer\s*care|helpline)\b.*$', '', name, flags=re.IGNORECASE).strip()
-            # Collapse spaces
-            name = re.sub(r'\s+', ' ', name)
-            # Keeping only alphabet, dot and space
-            name = re.sub(r'[^A-Za-z\.\s]', '', name).strip()
-            # Filtering out lines that still contain generic words
-            if re.search(r'\b(ACCOUNT|STATEMENT|SUMMARY|AMOUNT|DUE|DATE|BILL|PERIOD|CYCLE|ADDRESS|NOMINEE)\b', name, flags=re.IGNORECASE):
-                return ''
-            # Prefer 2-5 words
-            tokens = [t for t in name.split(' ') if t]
-            if len(tokens) < 2 or len(tokens) > 5:
-                return ''
-            # Title case tokens with dots preserved (e.g., A. B. NAME)
-            def tc(tok: str) -> str:
-                if '.' in tok and len(tok) <= 3:
-                    return tok.upper()
-                return tok.capitalize()
-            name = ' '.join(tc(t) for t in tokens)
-            return name if 3 < len(name) < 50 else ''
-
-        # 1) Line-by-line scan for strong labels, excluding nominee lines
-        labels = [
-            r'Cardmember\s*Name', r'Card\s*Member\s*Name', r'Customer\s*Name',
-            r'Cardholder', r'Card\s*Holder', r'Name\s*:\s*'
-        ]
-        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-        for ln in lines:
-            if re.search(r'Nominee', ln, re.IGNORECASE):
-                continue
-            for lb in labels:
-                m = re.search(rf'(?:{lb})[:\s]*([A-Z][A-Z\s\.-]{{3,}})$', ln, re.IGNORECASE)
-                if m:
-                    candidate = _clean_candidate_name(m.group(1))
-                    if candidate:
-                        return candidate
-
-        # 2) "Dear NAME," style greetings
-        m = re.search(r'Dear\s+(?:Mr\.?|Ms\.?|Mrs\.?|Mx\.?)?\s*([A-Z][A-Z\s\.-]+?)(?:,|\n)', text, re.IGNORECASE)
-        if m:
-            candidate = _clean_candidate_name(m.group(1))
-            if candidate:
-                return candidate
-
-        # 3) Fallback regex patterns from the entire text
-        patterns = [
-            r'(?:Cardmember\s*Name|Card\s*Member\s*Name|Customer\s*Name|Cardholder|Card\s*Holder|Name)[:\s]+([A-Z][A-Z\s\.]+)',
-            r'(?:Mr\.?|Ms\.?|Mrs\.?|Mx\.?)\s*([A-Z][A-Z\s]+)',
-            r'(?:Attention|Attn\.|To)[:\s]+([A-Z][A-Z\s\.]+)'
-        ]
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                candidate = _clean_candidate_name(match.group(1))
-                if candidate:
-                    return candidate
-
+    def _extract_hdfc_name(self, text: str) -> str:
+        match = re.search(r'Name\s*:\s*([A-Z\s]+)', text)
+        if match:
+            return match.group(1).strip()
         return 'Not Found'
     
-    def _extract_card_last_4(self, text):
-        """Extracting last 4 digits of card number"""
-        # Include common mask symbols used in PDFs and OCR (e.g bullets)
-        masked = r'(?:X|x|\*|•|●|■|◼︎)'
-        sep = r'[\s\-]+'
-        patterns = [
-            # Labelled masked number
-            rf'(?:Card\s*Number|Card\s*No\.?|Account\s*Number)[:\s]*{masked}{{4,}}(?:{sep}?{masked}{{4,}}){{2,3}}{sep}?(\d{{4}})',
-            # Generic masked groups like XXXX-XXXX-XXXX-1234 or **** **** **** 1234
-            rf'{masked}{{4}}(?:{sep}?{masked}{{4}}){{2,3}}{sep}?(\d{{4}})',
-            # Unmasked grouped 16-digit numbers
-            r'(?:\b\d{4}[\s\-]?){3}(\d{4})\b',
-            # Phrases like 'ending 1234' or 'ends with 1234'
-            r'(?:ending|ending\s*in|ends\s*with)[:\s]*(\d{4})'
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                return match.group(1)
-        
-        # Trying to find any 16-digit number (credit card format)
-        match = re.search(r'(?:\b\d{4}\s+){3}(\d{4})\b', text)
+    def _extract_hdfc_card(self, text: str) -> str:
+        match = re.search(r'Card\s*No:\s*([\dX\s]+)', text)
+        if match:
+            return match.group(1).strip()
+        return 'Not Found'
+    
+    def _extract_hdfc_statement_date(self, text: str) -> str:
+        match = re.search(r'Statement\s*Date:\s*(\d{2}/\d{2}/\d{4})', text)
         if match:
             return match.group(1)
-        
         return 'Not Found'
     
-    def _extract_billing_period(self, text):
-        """Extracting billing period or statement cycle"""
-        patterns = [
-            # Month name formats: Jan 1, 2023 to Jan 31, 2023
-            r'(?:Statement\s*Period|Billing\s*Period|Statement\s*Cycle|Cycle|Period)[:\s]*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4})\s*(?:to|-|through)\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4})',
-            # Numeric with slashes or dashes: 01/01/2023 - 31/01/2023
-            r'(?:From|Period|Cycle)[:\s]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*(?:to|To|-|through)\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})',
-            # Using dots: 01.01.2023 to 31.01.2023
-            r'(\d{1,2}[\.\s][A-Za-z]{3,9}[\.\s]?\s*\d{2,4})\s*(?:to|-|through)\s*(\d{1,2}[\.\s][A-Za-z]{3,9}[\.\s]?\s*\d{2,4})',
-            # Day Month Year words: 1 Jan 2023 - 31 Jan 2023
-            r'(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})\s*(?:to|-|through)\s*(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})'
-        ]
+    def _extract_hdfc_due_date(self, text: str) -> str:
+        match = re.search(r'Payment\s*Due\s*Date\s*Total\s*Dues[^\n]*\n\s*(\d{2}/\d{2}/\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_hdfc_total_due(self, text: str) -> str:
+        match = re.search(r'Total\s*Dues[^\n]*\n\s*\d{2}/\d{2}/\d{4}\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_hdfc_min_due(self, text: str) -> str:
+        match = re.search(r'Minimum\s*Amount\s*Due[^\n]*\n\s*\d{2}/\d{2}/\d{4}\s*[\d,]+\.?\d*\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_hdfc_credit_limit(self, text: str) -> str:
+        match = re.search(r'Credit\s*Limit\s*Available[^\n]*\n\s*([\d,]+)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_hdfc_transactions(self, text: str) -> List[Dict]:
+        transactions = []
+        lines = text.split('\n')
+        in_transaction_section = False
         
+        for line in lines:
+            if 'Domestic Transactions' in line or 'International Transactions' in line:
+                in_transaction_section = True
+                continue
+            
+            if in_transaction_section:
+                match = re.match(r'(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([\d,]+\.\d{2})\s*(Cr)?', line.strip())
+                if match:
+                    transactions.append({
+                        'date': match.group(1),
+                        'description': match.group(2).strip(),
+                        'amount': f"₹{match.group(3)}",
+                        'type': 'Credit' if match.group(4) else 'Debit'
+                    })
+        
+        return transactions
+    
+    # ===== ICICI EXTRACTION METHODS =====
+    
+    def _extract_icici_name(self, text: str) -> str:
+        match = re.search(r'MR\.\s+([A-Z\s]+)', text)
+        if match:
+            name = match.group(1).strip()
+            # Stop at address indicators
+            name = re.split(r'\d{3,}|[A-Z]{2,}\s+B\s+\d+', name)[0].strip()
+            return name
+        return 'Not Found'
+    
+    def _extract_icici_card(self, text: str) -> str:
+        match = re.search(r'(\d{4}[X]{6,}\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_icici_statement_date(self, text: str) -> str:
+        match = re.search(r'STATEMENT\s*DATE[^\n]*\n[^\n]*\n[^\n]*\n([A-Za-z]+\s+\d{1,2},\s*\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_icici_due_date(self, text: str) -> str:
+        match = re.search(r'PAYMENT\s*DUE\s*DATE[^\n]*\n[^\n]*\n[^\n]*\n([A-Za-z]+\s+\d{1,2},\s*\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_icici_total_due(self, text: str) -> str:
+        match = re.search(r'Total\s*Amount\s*due\s*`([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_icici_min_due(self, text: str) -> str:
+        match = re.search(r'Minimum\s*Amount\s*due\s*`([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_icici_credit_limit(self, text: str) -> str:
+        match = re.search(r'Credit\s*Limit[^\n]*\n\s*`([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_icici_transactions(self, text: str) -> List[Dict]:
+        transactions = []
+        pattern = r'(\d{2}/\d{2}/\d{4})\s+\d+\s+(.+?)\s+\d+\s+([\d,]+\.?\d*)\s*(CR)?'
+        
+        for match in re.finditer(pattern, text):
+            transactions.append({
+                'date': match.group(1),
+                'description': match.group(2).strip(),
+                'amount': f"₹{match.group(3)}",
+                'type': 'Credit' if match.group(4) else 'Debit'
+            })
+        
+        return transactions
+    
+    # ===== AXIS EXTRACTION METHODS =====
+    
+    def _extract_axis_name(self, text: str) -> str:
+        match = re.search(r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s*\nCredit\s*Card\s*Statement', text)
+        if match:
+            return match.group(1).strip()
+        return 'Not Found'
+    
+    def _extract_axis_card(self, text: str) -> str:
+        match = re.search(r'Card\s*Number\s*:\s*([\d\*]+)', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_axis_statement_date(self, text: str) -> str:
+        match = re.search(r'Statement\s*Date\s*(\d{2}/\d{2}/\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_axis_due_date(self, text: str) -> str:
+        match = re.search(r'Payment\s*Due\s*Date\s*(\d{2}/\d{2}/\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_axis_total_due(self, text: str) -> str:
+        match = re.search(r'Total\s*Amount\s*Due\s*r\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_axis_min_due(self, text: str) -> str:
+        match = re.search(r'Minimum\s*Amount\s*Due\s*r\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_axis_credit_limit(self, text: str) -> str:
+        match = re.search(r'Credit\s*Limit\s*r\s*([\d,]+)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_axis_transactions(self, text: str) -> List[Dict]:
+        transactions = []
+        pattern = r'(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([\d,]+\.?\d*)\s*(CR)?'
+        
+        lines = text.split('\n')
+        in_transaction_section = False
+        
+        for line in lines:
+            if 'Transaction Date' in line:
+                in_transaction_section = True
+                continue
+            
+            if in_transaction_section and re.match(r'^\d{2}/\d{2}/\d{4}', line.strip()):
+                match = re.match(r'(\d{2}/\d{2}/\d{4})\s+(.+?)\s+([\d,]+\.?\d*)\s*(CR)?', line.strip())
+                if match:
+                    transactions.append({
+                        'date': match.group(1),
+                        'description': match.group(2).strip(),
+                        'amount': f"₹{match.group(3)}",
+                        'type': 'Credit' if match.group(4) else 'Debit'
+                    })
+        
+        return transactions
+    
+    # ===== KOTAK EXTRACTION METHODS =====
+    
+    def _extract_kotak_name(self, text: str) -> str:
+        # Kotak names appear as concatenated strings like "JULLYSHAILESHSHAH"
+        # Look for pattern: NAME followed by "StatementDate"
+        match = re.search(r'^([A-Z]+)\s+StatementDate', text, re.MULTILINE)
+        if match:
+            name = match.group(1)
+            if len(name) > 6:  # Reasonable name length
+                # Try to add spaces between likely word boundaries
+                # Look for patterns where lowercase letters might indicate word boundaries
+                formatted_name = self._format_kotak_name(name)
+                return formatted_name
+        return 'Not Found'
+    
+    def _format_kotak_name(self, name: str) -> str:
+        """Format concatenated Kotak name by adding spaces between likely words"""
+        # This is a simple heuristic - could be improved with better logic
+        # For now, just return the name as-is since it's working
+        # In the future, this could be enhanced with name splitting logic
+        return name
+    
+    def _extract_kotak_card(self, text: str) -> str:
+        match = re.search(r'(\d{6}X+\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_kotak_statement_date(self, text: str) -> str:
+        match = re.search(r'Statement\s*Date\s*(\d{2}-[A-Za-z]{3}-\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_kotak_due_date(self, text: str) -> str:
+        match = re.search(r'Remember\s*to\s*Pay\s*By\s*(\d{2}-[A-Za-z]{3}-\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_kotak_total_due(self, text: str) -> str:
+        match = re.search(r'Total\s*Amount\s*Due\s*Rs\.\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_kotak_min_due(self, text: str) -> str:
+        match = re.search(r'Minimum\s*Amount\s*Due\s*Rs\.\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_kotak_credit_limit(self, text: str) -> str:
+        match = re.search(r'Total\s*Credit\s*Limit\s*Rs\.\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_kotak_transactions(self, text: str) -> List[Dict]:
+        transactions = []
+        pattern = r'(\d{2}/\d{2}/\d{4})\s+(.+?)\s+[A-Za-z\s]+\s+([\d,]+\.?\d*)\s*(Cr)?'
+        
+        for match in re.finditer(pattern, text):
+            transactions.append({
+                'date': match.group(1),
+                'description': match.group(2).strip(),
+                'amount': f"₹{match.group(3)}",
+                'type': 'Credit' if match.group(4) else 'Debit'
+            })
+        
+        return transactions
+    
+    # ===== SBI EXTRACTION METHODS =====
+    
+    def _extract_sbi_name(self, text: str) -> str:
+        match = re.search(r'MR\.\s+([A-Z\s]+)', text)
+        if match:
+            return match.group(1).strip()
+        return 'Not Found'
+    
+    def _extract_sbi_card(self, text: str) -> str:
+        match = re.search(r'(\d{4}\s*X+\s*X+\s*X+\s*\d{4})', text)
+        if match:
+            return match.group(1).replace(' ', '')
+        return 'Not Found'
+    
+    def _extract_sbi_statement_date(self, text: str) -> str:
+        match = re.search(r'Statement\s*Date\s*(\d{2}\s*[A-Z]{3}\s*\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_sbi_due_date(self, text: str) -> str:
+        match = re.search(r'Payment\s*Due\s*Date\s*(\d{2}\s*[A-Z]{3}\s*\d{4})', text)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_sbi_total_due(self, text: str) -> str:
+        match = re.search(r'Total\s*Payment\s*Due\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_sbi_min_due(self, text: str) -> str:
+        match = re.search(r'Minimum\s*Payment\s*Due\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_sbi_credit_limit(self, text: str) -> str:
+        match = re.search(r'Credit\s*Limit\s*([\d,]+\.?\d*)', text)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _extract_sbi_transactions(self, text: str) -> List[Dict]:
+        transactions = []
+        pattern = r'(\d{2}\.\d{2}\.\d{4})\s+([A-Z]+)\s+(.+?)\s+([\d,]+\.?\d*)'
+        
+        for match in re.finditer(pattern, text):
+            transactions.append({
+                'date': match.group(1),
+                'description': f"{match.group(2)} {match.group(3)}".strip(),
+                'amount': f"₹{match.group(4)}",
+                'type': 'Debit'
+            })
+        
+        return transactions
+    
+    # ===== GENERIC EXTRACTION METHODS =====
+    
+    def _extract_generic_name(self, text: str) -> str:
+        patterns = [
+            r'(?:Name|Cardholder)[:\s]*([A-Z][A-Z\s\.]+)',
+            r'(?:Mr\.|Ms\.|Mrs\.)\s*([A-Z][A-Z\s]+)',
+        ]
         for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
+            match = re.search(pattern, text)
             if match:
-                start_date = match.group(1)
-                end_date = match.group(2)
-                return f"{start_date} - {end_date}"
-        
+                name = match.group(1).strip()
+                if 2 <= len(name.split()) <= 5:
+                    return name
         return 'Not Found'
     
-    def _extract_amount_due(self, text):
-        """Extracting total amount due"""
-        # Capture money with optional currency symbol or text and possible '/-'
-        currency = r'(?:Rs\.?|INR|₹|Rupees)?'
-        amount_core = r'([\d]{1,3}(?:,[\d]{2,3})*(?:\.\d{1,2})?|[\d]+(?:\.\d{1,2})?)'
-        tail = r'(?:\s*/-)?'
-        money = rf'(?:{currency}\s*)?{amount_core}{tail}'
-        # Labels often used across providers
-        labels_total_due = r'(?:Total\s*Amount\s*Due|Total\s*Amt\.?\s*Due|Total\s*Due|Total\s*Dues|Amount\s*Payable\s*(?:by\s*Due\s*Date)?|Amount\s*Payable|Amount\s*to\s*be\s*Paid|Net\s*Amount\s*Payable)'
-        labels_balance = r'(?:Current\s*Balance|Outstanding\s*Amount|Total\s*Outstanding|Closing\s*Balance)'
-        labels_min_due = r'(?:Minimum\s*Amount\s*Due|Min\.?\s*Due|Minimum\s*Due)'
+    def _extract_generic_card(self, text: str) -> str:
         patterns = [
-            rf'{labels_total_due}[:\s]*{money}',
-            rf'{labels_balance}[:\s]*{money}',
-            rf'{labels_min_due}[:\s]*{money}'
+            r'(\d{4}[\sX*]{4,}\d{4})',
+            r'Card.*?(\d{4})',
         ]
-        
         for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
-            if match:
-                # Find the first captured amount group by scanning groups backwards (to skip label match groups)
-                amount = None
-                for g in match.groups()[::-1]:
-                    if g and re.match(r'^\d', g):
-                        amount = g
-                        break
-                if amount:
-                    # Normalize thousand separators like 1,23,456.78 as-is
-                    return f"₹{amount}"
-        
-        return 'Not Found'
-    
-    def _extract_due_date(self, text):
-        """Extracting payment due date"""
-        # Allow ordinal suffixes and various separators
-        day = r'\d{1,2}(?:st|nd|rd|th)?'
-        month_name = r'[A-Za-z]{3,9}'
-        year = r'\d{2,4}|XX|xx'  # Include XX/xx for sample statements
-        date_wordy = rf'{day}\s+{month_name}\s+{year}'
-        date_wordy_monthfirst = rf'{month_name}\s+{day},?\s+{year}'
-        date_numeric = r'\d{1,2}[\/-]\d{1,2}[\/-](?:\d{2,4}|XX|xx)'  # Include XX/xx
-        date_dot = r'\d{1,2}\.\d{1,2}\.(?:\d{2,4}|XX|xx)'  # Include XX/xx
-
-        labels = r'(?:Payment\s*Due\s*Date|Payment\s*Due|Due\s*Date|Due\s*Dt\.?|Pay\s*by|Pay\s*on|Due\s*on|Due\s*by|Last\s*date\s*of\s*payment|On\s*or\s*before)'
-
-        patterns = [
-            rf'{labels}[:\s]*({date_wordy_monthfirst})',
-            rf'{labels}[:\s]*({date_wordy})',
-            rf'{labels}[:\s]*({date_numeric})',
-            rf'{labels}[:\s]*({date_dot})',
-        ]
-        
-        for pattern in patterns:
-            match = re.search(pattern, text, re.IGNORECASE)
+            match = re.search(pattern, text)
             if match:
                 return match.group(1)
-        
         return 'Not Found'
     
-    def _calculate_confidence(self, data):
-        """Calculating confidence score based on extracted fields"""
-        found_fields = sum(1 for value in data.values() if value != 'Not Found')
-        total_fields = len(data)
+    def _extract_generic_due_date(self, text: str) -> str:
+        pattern = r'(?:Due\s*Date|Payment\s*Due)[:\s]*(\d{1,2}[\/\-][A-Za-z]{3}[\/\-]\d{2,4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})'
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        return 'Not Found'
+    
+    def _extract_generic_amount(self, text: str) -> str:
+        pattern = r'(?:Total.*?Due|Amount.*?Due)[:\s]*(?:Rs\.?|₹)?\s*([\d,]+\.?\d*)'
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return f"₹{match.group(1)}"
+        return 'Not Found'
+    
+    def _calculate_confidence(self, data: Dict) -> int:
+        """Calculate confidence score based on extracted fields"""
+        found_fields = 0
+        total_fields = 0
+        
+        for key, value in data.items():
+            if key == 'transactions':
+                continue
+            total_fields += 1
+            if value and value != 'Not Found':
+                found_fields += 1
+        
+        if total_fields == 0:
+            return 0
+        
         confidence = int((found_fields / total_fields) * 100)
         return confidence
